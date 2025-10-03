@@ -1,0 +1,2 @@
+[console_scripts]
+rama-research-server = rama_research_server.server:main

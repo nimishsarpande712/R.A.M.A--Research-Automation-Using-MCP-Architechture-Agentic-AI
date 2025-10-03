@@ -1,0 +1,43 @@
+/* Import Inter font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Quantum Clarity Theme Variables */
+:root {
+  --primary-accent: #6B48FF;
+  --secondary-accent: #00C9A7;
+  --neutral-background-dark: #1A1A2E;
+  --neutral-background-light: #2C2C4A;
+  --neutral-background-subtle: #3D3D5E;
+  --text-primary: #E0E0E0;
+  --text-secondary: #A0A0B0;
+  --text-cta: #FFFFFF;
+  --success: #00C9A7;
+  --warning: #FFC107;
+  --error: #DC3545;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--neutral-background-dark);
+  color: var(--text-primary);
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.App {
+  min-height: 100vh;
+}

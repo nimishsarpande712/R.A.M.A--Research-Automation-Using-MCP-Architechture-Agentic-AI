@@ -1,0 +1,50 @@
+{
+  "name": "rama",
+  "version": "0.1.0",
+  "private": true,
+  "keywords": [
+    "ajv",
+    "ajv-dist"
+  ],
+  "dependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^13.5.0",
+    "ajv": "^8.17.1",
+    "ajv-keywords": "^5.1.0",
+    "axios": "^1.12.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.3",
+    "react-scripts": "^5.0.1",
+    "web-vitals": "^2.1.4"
+  },
+  "scripts": {
+    "start": "node ./node_modules/cross-env/dist/bin/cross-env.js react-scripts start",
+    "build": "node ./node_modules/cross-env/dist/bin/cross-env.js react-scripts build",
+    "test": "node ./node_modules/cross-env/dist/bin/cross-env.js react-scripts test",
+    "eject": "node ./node_modules/cross-env/dist/bin/cross-env.js react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0"
+  }
+}

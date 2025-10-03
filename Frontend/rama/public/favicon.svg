@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Robot Head -->
+  <rect x="20" y="18" width="24" height="20" rx="4" fill="#4A90E2" stroke="#2C5282" stroke-width="2"/>
+  
+  <!-- Eyes -->
+  <circle cx="26" cy="25" r="3" fill="#63B3ED"/>
+  <circle cx="38" cy="25" r="3" fill="#63B3ED"/>
+  <circle cx="26" cy="25" r="1" fill="#1A365D"/>
+  <circle cx="38" cy="25" r="1" fill="#1A365D"/>
+  
+  <!-- Mouth -->
+  <rect x="28" y="31" width="8" height="2" rx="1" fill="#2C5282"/>
+  
+  <!-- Antenna -->
+  <line x1="32" y1="18" x2="32" y2="12" stroke="#2C5282" stroke-width="2"/>
+  <circle cx="32" cy="10" r="2" fill="#48BB78"/>
+  
+  <!-- Body -->
+  <rect x="22" y="38" width="20" height="16" rx="2" fill="#E2E8F0" stroke="#718096" stroke-width="2"/>
+  
+  <!-- Control Panel -->
+  <rect x="26" y="42" width="4" height="2" rx="1" fill="#48BB78"/>
+  <rect x="34" y="42" width="4" height="2" rx="1" fill="#ED8936"/>
+  <circle cx="32" cy="48" r="2" fill="#4A90E2"/>
+  
+  <!-- Arms -->
+  <rect x="14" y="40" width="6" height="3" rx="1.5" fill="#A0AEC0"/>
+  <rect x="44" y="40" width="6" height="3" rx="1.5" fill="#A0AEC0"/>
+  
+  <!-- Research Tools -->
+  <!-- Magnifying Glass -->
+  <circle cx="16" cy="45" r="3" fill="none" stroke="#2C5282" stroke-width="1.5"/>
+  <line x1="18.5" y1="47.5" x2="21" y2="50" stroke="#2C5282" stroke-width="1.5"/>
+  
+  <!-- Book/Document -->
+  <rect x="45" y="46" width="6" height="4" rx="0.5" fill="#FFF5F5" stroke="#E53E3E" stroke-width="1"/>
+  <line x1="46" y1="47.5" x2="50" y2="47.5" stroke="#E53E3E" stroke-width="0.5"/>
+  <line x1="46" y1="49" x2="49" y2="49" stroke="#E53E3E" stroke-width="0.5"/>
+  
+  <!-- Data Streams -->
+  <circle cx="12" cy="25" r="1" fill="#48BB78" opacity="0.7"/>
+  <circle cx="8" cy="30" r="1" fill="#48BB78" opacity="0.5"/>
+  <circle cx="56" cy="28" r="1" fill="#48BB78" opacity="0.7"/>
+  <circle cx="52" cy="22" r="1" fill="#48BB78" opacity="0.5"/>
+</svg>

@@ -1,0 +1,8 @@
+mcp
+httpx
+beautifulsoup4
+aiofiles
+python-dotenv
+scholarly
+arxiv
+requests

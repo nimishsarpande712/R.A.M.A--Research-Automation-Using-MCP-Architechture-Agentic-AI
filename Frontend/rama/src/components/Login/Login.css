@@ -1,0 +1,106 @@
+:root {
+    --primary-accent: #6B48FF;
+    --secondary-accent: #00C9A7;
+    --neutral-background-dark: #1A1A2E;
+    --neutral-background-light: #2C2C4A;
+    --neutral-background-subtle: #3D3D5E;
+    --text-primary: #E0E0E0;
+    --text-secondary: #A0A0B0;
+    --text-cta: #FFFFFF;
+    --success: #00C9A7;
+    --warning: #FFC107;
+    --error: #DC3545;
+  }
+  
+  .login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: var(--neutral-background-dark);
+    font-family: 'Inter', sans-serif;
+  }
+  
+  .login-form {
+    background-color: var(--neutral-background-light);
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+  }
+  
+  .login-form h2 {
+    color: var(--text-primary);
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .login-subtitle {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 30px;
+  }
+
+  .error-message {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: var(--error);
+    padding: 12px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    border: 1px solid var(--error);
+  }
+  
+  .input-group {
+    margin-bottom: 20px;
+    text-align: left;
+  }
+  
+  .input-group label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  
+  .input-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--neutral-background-subtle);
+    background-color: var(--neutral-background-subtle);
+    color: var(--text-primary);
+    border-radius: 5px;
+    font-size: 16px;
+  }
+  
+  .input-group input:focus {
+    outline: none;
+    border-color: var(--primary-accent);
+  }
+  
+  .signin-btn {
+    width: 100%;
+    padding: 15px;
+    background-color: var(--primary-accent);
+    color: var(--text-cta);
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .signin-btn:hover {
+    background-color: #5a38e0;
+  }
+
+  .signin-btn:disabled {
+    background-color: var(--neutral-background-subtle);
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  

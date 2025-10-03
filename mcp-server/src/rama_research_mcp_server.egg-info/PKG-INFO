@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: rama-research-mcp-server
+Version: 0.1.0
+Summary: RAMA Research MCP Server for automated research queries
+Author-email: RAMA Project <noreply@example.com>
+Requires-Dist: mcp
+Requires-Dist: httpx
+Requires-Dist: beautifulsoup4
+Requires-Dist: aiofiles
+Requires-Dist: python-dotenv
+Requires-Dist: scholarly
+Requires-Dist: arxiv
+Requires-Dist: requests
