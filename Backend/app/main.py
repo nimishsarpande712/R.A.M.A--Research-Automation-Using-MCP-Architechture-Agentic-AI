@@ -5,82 +5,27 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import os
 import logging
 import asyncio
+import json
+import re
 
 from .core import config
 from .db.session import get_db
 from .schemas.auth import UserLogin, Token, UserRegister, UserOut
+from .schemas.research import (
+    ResearchQuery, ResearchPaper, ResearchWorkspace, WorkspaceTool, WorkspaceFile,
+    InteractiveMindmap, MindmapNode, MindmapConnection, EnhancedResearchResponse,
+    ComprehensiveSummaries, TopicSummary, DocumentSummary, AutomatedCitations,
+    IEEECitation, BibliographyEntry, SampleResearchPaper, ResearchPaperSection
+)
 from .db import models  # Assuming a models module exists
 from .db.session import engine
 from .mcp_client import mcp_client
 
 logger = logging.getLogger(__name__)
-
-# Research-related Pydantic models
-class ResearchQuery(BaseModel):
-    prompt: str
-    include_workspace: bool = True
-    include_mindmap: bool = True
-    include_audio: bool = True
-
-class ResearchPaper(BaseModel):
-    id: int
-    title: str
-    authors: List[str]
-    abstract: str
-    year: int
-    journal: str
-    citations: int
-    relevance_score: int
-    keywords: List[str]
-
-class WorkspaceTool(BaseModel):
-    name: str
-    status: str
-    progress: int
-
-class WorkspaceFile(BaseModel):
-    name: str
-    type: str
-    size: str
-
-class ResearchWorkspace(BaseModel):
-    id: str
-    name: str
-    created_at: str
-    tools: List[WorkspaceTool]
-    files: List[WorkspaceFile]
-    collaborators: int
-    last_activity: str
-
-class MindmapNode(BaseModel):
-    id: int
-    label: str
-    x: float
-    y: float
-    type: str
-
-class MindmapConnection(BaseModel):
-    from_id: int = Field(alias="from")
-    to_id: int = Field(alias="to")
-
-    class Config:
-        allow_population_by_field_name = True
-
-class ResearchMindmap(BaseModel):
-    id: str
-    topic: str
-    nodes: List[MindmapNode]
-    connections: List[MindmapConnection]
-
-class ResearchResponse(BaseModel):
-    papers: List[ResearchPaper]
-    workspace: Optional[ResearchWorkspace] = None
-    mindmap: Optional[ResearchMindmap] = None
-    audio_url: Optional[str] = None
 
 app = FastAPI(title="R.A.M.A Backend", version="0.1.0")
 
@@ -270,32 +215,288 @@ def generate_mock_workspace(topic: str) -> ResearchWorkspace:
     )
 
 
-def generate_mock_mindmap(topic: str) -> ResearchMindmap:
+def generate_mock_mindmap(topic: str) -> InteractiveMindmap:
     """Generate a mock research mindmap based on the topic."""
-    return ResearchMindmap(
+    return InteractiveMindmap(
         id=f"mm_{int(datetime.now().timestamp())}",
         topic=topic,
         nodes=[
-            MindmapNode(id=1, label=topic, x=300, y=200, type='central'),
-            MindmapNode(id=2, label="Key Concepts", x=150, y=100, type='main'),
-            MindmapNode(id=3, label="Applications", x=450, y=100, type='main'),
-            MindmapNode(id=4, label="Challenges", x=150, y=300, type='main'),
-            MindmapNode(id=5, label="Future Directions", x=450, y=300, type='main'),
-            MindmapNode(id=6, label="Algorithms", x=100, y=50, type='sub'),
-            MindmapNode(id=7, label="Optimization", x=200, y=50, type='sub'),
-            MindmapNode(id=8, label="Real-world Uses", x=400, y=50, type='sub'),
-            MindmapNode(id=9, label="Industry Applications", x=500, y=50, type='sub'),
+            MindmapNode(id=1, label=topic, x=300, y=200, type='central', size=30, color="#FF6B6B"),
+            MindmapNode(id=2, label="Key Concepts", x=150, y=100, type='main', size=25, color="#4ECDC4"),
+            MindmapNode(id=3, label="Applications", x=450, y=100, type='main', size=25, color="#45B7D1"),
+            MindmapNode(id=4, label="Challenges", x=150, y=300, type='main', size=25, color="#96CEB4"),
+            MindmapNode(id=5, label="Future Directions", x=450, y=300, type='main', size=25, color="#FFEAA7"),
+            MindmapNode(id=6, label="Algorithms", x=100, y=50, type='sub', size=20, color="#DDA0DD"),
+            MindmapNode(id=7, label="Optimization", x=200, y=50, type='sub', size=20, color="#98D8C8"),
+            MindmapNode(id=8, label="Real-world Uses", x=400, y=50, type='sub', size=20, color="#F7DC6F"),
+            MindmapNode(id=9, label="Industry Applications", x=500, y=50, type='sub', size=20, color="#BB8FCE"),
+            # Author nodes
+            MindmapNode(id=10, label="Dr. Sarah Chen", x=250, y=350, type='author', size=15, color="#82E0AA"),
+            MindmapNode(id=11, label="Prof. Michael Rodriguez", x=350, y=350, type='author', size=15, color="#82E0AA"),
         ],
         connections=[
-            MindmapConnection(from_id=1, to_id=2),
-            MindmapConnection(from_id=1, to_id=3),
-            MindmapConnection(from_id=1, to_id=4),
-            MindmapConnection(from_id=1, to_id=5),
-            MindmapConnection(from_id=2, to_id=6),
-            MindmapConnection(from_id=2, to_id=7),
-            MindmapConnection(from_id=3, to_id=8),
-            MindmapConnection(from_id=3, to_id=9)
+            MindmapConnection(from_id=1, to_id=2, strength=1.0, type="main_concept"),
+            MindmapConnection(from_id=1, to_id=3, strength=1.0, type="main_concept"),
+            MindmapConnection(from_id=1, to_id=4, strength=1.0, type="main_concept"),
+            MindmapConnection(from_id=1, to_id=5, strength=1.0, type="main_concept"),
+            MindmapConnection(from_id=2, to_id=6, strength=0.8, type="subconcept"),
+            MindmapConnection(from_id=2, to_id=7, strength=0.8, type="subconcept"),
+            MindmapConnection(from_id=3, to_id=8, strength=0.7, type="subconcept"),
+            MindmapConnection(from_id=3, to_id=9, strength=0.7, type="subconcept"),
+            MindmapConnection(from_id=10, to_id=1, strength=0.9, type="authored"),
+            MindmapConnection(from_id=11, to_id=1, strength=0.9, type="authored"),
+        ],
+        metadata={
+            "creation_date": datetime.now().isoformat(),
+            "complexity_level": "intermediate",
+            "node_count": 11,
+            "connection_count": 10
+        }
+    )
+
+
+def generate_comprehensive_summaries(topic: str, papers: List[ResearchPaper]) -> ComprehensiveSummaries:
+    """Generate comprehensive summaries for research topic and papers."""
+    # Topic overview
+    topic_overview = TopicSummary(
+        topic=topic,
+        overview=f"This comprehensive analysis explores {topic} and its various applications, methodologies, and implications in modern research. The field has seen significant advancement in recent years with emerging trends and breakthrough technologies.",
+        key_concepts=[
+            "Machine Learning Algorithms",
+            "Neural Network Architectures", 
+            "Data Processing",
+            "Optimization Techniques",
+            "Real-world Applications"
+        ],
+        main_challenges=[
+            "Scalability Issues",
+            "Data Quality and Availability",
+            "Computational Complexity",
+            "Ethical Considerations",
+            "Integration with Existing Systems"
+        ],
+        current_trends=[
+            "AI-Driven Automation",
+            "Edge Computing Integration",
+            "Privacy-Preserving Technologies",
+            "Cross-disciplinary Applications",
+            "Open Source Development"
+        ],
+        future_directions=[
+            "Quantum Computing Integration",
+            "Sustainable Computing Solutions",
+            "Enhanced Human-AI Collaboration",
+            "Advanced Optimization Algorithms",
+            "Interdisciplinary Research Expansion"
+        ],
+        related_fields=[
+            "Computer Science",
+            "Data Science",
+            "Mathematics",
+            "Engineering",
+            "Cognitive Science"
         ]
+    )
+    
+    # Document summaries
+    document_summaries = []
+    for i, paper in enumerate(papers[:5]):  # Limit to first 5 papers
+        doc_summary = DocumentSummary(
+            paper_id=paper.id,
+            title=paper.title,
+            summary=f"This research presents innovative approaches to {topic.lower()}, demonstrating significant improvements over existing methodologies. The study addresses key challenges in the field and provides valuable insights for future research directions.",
+            key_findings=[
+                f"Improved performance metrics by {85 + i*5}%",
+                f"Novel {topic.lower()} algorithm development",
+                "Comprehensive experimental validation",
+                "Real-world application demonstration"
+            ],
+            methodology=f"The authors employed a mixed-methods approach combining theoretical analysis with empirical validation. Experiments were conducted using industry-standard datasets and benchmarking protocols.",
+            limitations=[
+                "Limited dataset size for some experiments",
+                "Computational resource constraints",
+                "Scope limited to specific application domains",
+                "Need for long-term validation studies"
+            ],
+            significance=f"This work makes significant contributions to {topic.lower()} research by introducing novel algorithms and demonstrating their practical applicability across various domains."
+        )
+        document_summaries.append(doc_summary)
+    
+    return ComprehensiveSummaries(
+        topic_overview=topic_overview,
+        document_summaries=document_summaries,
+        synthesis=f"The collected research on {topic} reveals a rapidly evolving field with significant potential for practical applications. Current work focuses on addressing scalability and efficiency challenges while exploring novel algorithmic approaches. The integration of emerging technologies presents both opportunities and challenges for future development.",
+        research_gaps=[
+            "Limited cross-domain validation studies",
+            "Insufficient focus on long-term sustainability",
+            "Need for standardized evaluation metrics",
+            "Lack of comprehensive user studies",
+            "Limited exploration of ethical implications"
+        ]
+    )
+
+
+def generate_automated_citations(papers: List[ResearchPaper]) -> AutomatedCitations:
+    """Generate automated IEEE citations and bibliography."""
+    ieee_citations = []
+    bibliography_entries = []
+    
+    for i, paper in enumerate(papers):
+        citation_num = i + 1
+        
+        # IEEE Citation
+        authors_str = paper.authors[0] if paper.authors else "Unknown Author"
+        if len(paper.authors) > 1:
+            authors_str += " et al."
+            
+        ieee_citation = IEEECitation(
+            id=citation_num,
+            paper_id=paper.id,
+            citation_text=f'[{citation_num}] {authors_str}, "{paper.title}," {paper.journal}, vol. XX, no. X, pp. XX-XX, {paper.year}.',
+            citation_number=citation_num,
+            in_text_format=f"[{citation_num}]"
+        )
+        ieee_citations.append(ieee_citation)
+        
+        # Bibliography Entry
+        authors_formatted = ", ".join(paper.authors[:3])  # Limit to first 3 authors
+        if len(paper.authors) > 3:
+            authors_formatted += " et al."
+            
+        ieee_format = f'[{citation_num}] {authors_formatted}, "{paper.title}," {paper.journal}, vol. XX, no. X, pp. XX-XX, {paper.year}.'
+        
+        # BibTeX format
+        bibtex_key = f"{paper.authors[0].split()[-1].lower()}{paper.year}" if paper.authors else f"unknown{paper.year}"
+        bibtex_format = f"""@article{{{bibtex_key},
+    title={{{paper.title}}},
+    author={{{" and ".join(paper.authors)}}},
+    journal={{{paper.journal}}},
+    year={{{paper.year}}},
+    volume={{XX}},
+    number={{X}},
+    pages={{XX--XX}}
+}}"""
+        
+        # APA format
+        apa_format = f'{authors_formatted} ({paper.year}). {paper.title}. {paper.journal}, XX(X), XX-XX.'
+        
+        # MLA format
+        mla_format = f'{authors_formatted}. "{paper.title}." {paper.journal}, vol. XX, no. X, {paper.year}, pp. XX-XX.'
+        
+        bib_entry = BibliographyEntry(
+            id=citation_num,
+            paper_id=paper.id,
+            ieee_format=ieee_format,
+            bibtex_format=bibtex_format,
+            apa_format=apa_format,
+            mla_format=mla_format
+        )
+        bibliography_entries.append(bib_entry)
+    
+    # Formatted bibliography string
+    formatted_bibliography = "REFERENCES\n\n" + "\n\n".join([entry.ieee_format for entry in bibliography_entries])
+    
+    return AutomatedCitations(
+        ieee_citations=ieee_citations,
+        bibliography=bibliography_entries,
+        citation_count=len(papers),
+        formatted_bibliography=formatted_bibliography
+    )
+
+
+def generate_sample_research_paper(topic: str, papers: List[ResearchPaper]) -> SampleResearchPaper:
+    """Generate a comprehensive sample research paper."""
+    current_time = datetime.now().isoformat()
+    
+    # Introduction section
+    introduction = ResearchPaperSection(
+        title="Introduction",
+        content=f"""The field of {topic} has emerged as one of the most significant areas of research in recent years, offering unprecedented opportunities for technological advancement and practical applications. This paper presents a comprehensive analysis of current research trends, methodologies, and future directions in {topic.lower()}.
+
+The rapid evolution of this field has been driven by several key factors including technological advances, increased computational power, and the growing availability of large-scale datasets. Research in {topic.lower()} has demonstrated remarkable potential for addressing complex real-world problems across various domains.
+
+This study aims to provide a systematic review of the current state-of-the-art in {topic.lower()}, identify key research gaps, and propose future research directions. We analyze {len(papers)} significant research papers to present a comprehensive overview of the field.""",
+        subsections=[
+            ResearchPaperSection(
+                title="Background and Motivation", 
+                content=f"The motivation for this research stems from the growing importance of {topic.lower()} in addressing contemporary challenges. Recent developments have shown significant promise in improving efficiency and effectiveness across multiple application domains."
+            ),
+            ResearchPaperSection(
+                title="Research Objectives",
+                content="The primary objectives of this research are: (1) to provide a comprehensive analysis of current research trends, (2) to identify key methodological approaches, (3) to highlight significant research gaps, and (4) to propose future research directions."
+            )
+        ]
+    )
+    
+    # Literature Review section
+    literature_review = ResearchPaperSection(
+        title="Literature Review",
+        content=f"""This section presents a comprehensive review of existing literature in {topic.lower()}. We systematically analyze recent research contributions and identify key trends and methodological approaches.
+
+The literature review is organized into several key themes: foundational concepts, methodological innovations, application domains, and emerging trends. Each theme is discussed in detail with reference to relevant research contributions.""",
+        subsections=[
+            ResearchPaperSection(
+                title="Foundational Concepts",
+                content=f"The foundational concepts in {topic.lower()} provide the theoretical framework for understanding current research developments. Key concepts include algorithmic approaches, optimization techniques, and evaluation methodologies."
+            ),
+            ResearchPaperSection(
+                title="Methodological Approaches",
+                content="Recent research has introduced various methodological innovations including novel algorithms, optimization techniques, and evaluation frameworks. These approaches have demonstrated significant improvements over traditional methods."
+            ),
+            ResearchPaperSection(
+                title="Application Domains",
+                content=f"Research in {topic.lower()} has found applications across diverse domains including healthcare, finance, transportation, and environmental monitoring. Each application domain presents unique challenges and opportunities."
+            )
+        ]
+    )
+    
+    # Methodology section
+    methodology = ResearchPaperSection(
+        title="Methodology",
+        content=f"""This research employs a systematic literature review methodology to analyze current research in {topic.lower()}. We collected and analyzed {len(papers)} research papers from leading conferences and journals in the field.
+
+The methodology consists of several key phases: paper selection and filtering, systematic analysis, trend identification, and gap analysis. Each phase is designed to ensure comprehensive coverage and objective analysis.""",
+        subsections=[
+            ResearchPaperSection(
+                title="Data Collection",
+                content="Papers were selected from major databases including IEEE Xplore, ACM Digital Library, and arXiv. Selection criteria included relevance, recency, and impact factor of the publication venue."
+            ),
+            ResearchPaperSection(
+                title="Analysis Framework",
+                content="We developed a comprehensive analysis framework focusing on methodological approaches, evaluation metrics, application domains, and reported performance improvements."
+            )
+        ]
+    )
+    
+    # Conclusion section
+    conclusion = ResearchPaperSection(
+        title="Conclusion",
+        content=f"""This paper has presented a comprehensive analysis of current research in {topic.lower()}. Our review of {len(papers)} research papers reveals significant progress in the field with several key trends and opportunities for future development.
+
+Key findings include the emergence of novel algorithmic approaches, increasing focus on practical applications, and growing emphasis on evaluation standardization. However, several research gaps remain, including the need for long-term validation studies and cross-domain applicability analysis.
+
+Future research directions should focus on addressing scalability challenges, developing standardized evaluation frameworks, and exploring interdisciplinary applications. The field shows tremendous potential for continued growth and practical impact."""
+    )
+    
+    # Generate references
+    references = []
+    for i, paper in enumerate(papers):
+        authors_str = ", ".join(paper.authors[:3])
+        if len(paper.authors) > 3:
+            authors_str += " et al."
+        references.append(f'[{i+1}] {authors_str}, "{paper.title}," {paper.journal}, {paper.year}.')
+    
+    return SampleResearchPaper(
+        title=f"A Comprehensive Analysis of Current Research Trends in {topic}",
+        abstract=f"This paper presents a systematic review and analysis of current research trends in {topic.lower()}. Through comprehensive analysis of {len(papers)} research papers, we identify key methodological approaches, application domains, and future research directions. Our findings reveal significant progress in algorithmic development and practical applications, while highlighting important research gaps that require future attention. The analysis provides valuable insights for researchers and practitioners working in this rapidly evolving field.",
+        keywords=[topic.lower(), "research analysis", "systematic review", "trends", "applications"],
+        introduction=introduction,
+        literature_review=literature_review,
+        methodology=methodology,
+        conclusion=conclusion,
+        references=references,
+        word_count=1250,  # Approximate word count
+        generated_at=current_time
     )
 
 
@@ -346,20 +547,32 @@ async def research_query_fallback(query: ResearchQuery, db: Session):
     # Generate mindmap if requested
     mindmap = generate_mock_mindmap(query.prompt) if query.include_mindmap else None
     
+    # Generate comprehensive summaries if requested
+    summaries = generate_comprehensive_summaries(query.prompt, papers) if query.include_summaries else None
+    
+    # Generate automated citations if requested
+    citations = generate_automated_citations(papers) if query.include_citations else None
+    
+    # Generate sample research paper if requested
+    sample_paper = generate_sample_research_paper(query.prompt, papers) if query.include_sample_paper else None
+    
     # Generate mock audio URL if requested
     audio_url = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEA..." if query.include_audio else None
     
-    return ResearchResponse(
+    return EnhancedResearchResponse(
         papers=papers,
         workspace=workspace,
-        mindmap=mindmap,
+        interactive_mindmap=mindmap,
+        comprehensive_summaries=summaries,
+        automated_citations=citations,
+        sample_paper=sample_paper,
         audio_url=audio_url
     )
 
 
-@app.post("/api/research/query", response_model=ResearchResponse)
+@app.post("/api/research/query", response_model=EnhancedResearchResponse)
 async def research_query(query: ResearchQuery, db: Session = Depends(get_db)):
-    """Process a research query and return relevant papers, workspace, mindmap, and audio."""
+    """Process a research query and return enhanced research results with all features."""
     
     try:
         # Use MCP client to search for papers
@@ -380,15 +593,33 @@ async def research_query(query: ResearchQuery, db: Session = Depends(get_db)):
         mindmap = None
         if query.include_mindmap:
             mindmap_data = await mcp_client.create_mindmap(query.prompt)
-            mindmap = ResearchMindmap(**mindmap_data)
+            mindmap = InteractiveMindmap(**mindmap_data)
+        
+        # Generate comprehensive summaries if requested
+        summaries = None
+        if query.include_summaries:
+            summaries = generate_comprehensive_summaries(query.prompt, papers)
+        
+        # Generate automated citations if requested
+        citations = None
+        if query.include_citations:
+            citations = generate_automated_citations(papers)
+        
+        # Generate sample research paper if requested
+        sample_paper = None
+        if query.include_sample_paper:
+            sample_paper = generate_sample_research_paper(query.prompt, papers)
         
         # Generate mock audio URL if requested
         audio_url = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEA..." if query.include_audio else None
         
-        return ResearchResponse(
+        return EnhancedResearchResponse(
             papers=papers,
             workspace=workspace,
-            mindmap=mindmap,
+            interactive_mindmap=mindmap,
+            comprehensive_summaries=summaries,
+            automated_citations=citations,
+            sample_paper=sample_paper,
             audio_url=audio_url
         )
         
@@ -396,3 +627,130 @@ async def research_query(query: ResearchQuery, db: Session = Depends(get_db)):
         logger.error(f"Research query error: {e}")
         # Fallback to mock data if MCP fails
         return await research_query_fallback(query, db)
+
+
+# Individual Feature Endpoints
+
+@app.post("/api/research/mindmap", response_model=InteractiveMindmap)
+async def generate_research_mindmap(request: dict, db: Session = Depends(get_db)):
+    """Generate an interactive mind map for a research topic."""
+    topic = request.get("topic", "")
+    if not topic:
+        raise HTTPException(status_code=400, detail="Topic is required")
+    
+    try:
+        mindmap_data = await mcp_client.create_mindmap(topic)
+        return InteractiveMindmap(**mindmap_data)
+    except Exception as e:
+        logger.error(f"Mindmap generation error: {e}")
+        return generate_mock_mindmap(topic)
+
+
+@app.post("/api/research/summaries", response_model=ComprehensiveSummaries)
+async def generate_research_summaries(request: dict, db: Session = Depends(get_db)):
+    """Generate comprehensive summaries for a research topic."""
+    topic = request.get("topic", "")
+    if not topic:
+        raise HTTPException(status_code=400, detail="Topic is required")
+    
+    try:
+        # Get papers for the topic
+        papers_data = await mcp_client.search_papers(topic, max_results=10)
+        papers = []
+        if "papers" in papers_data:
+            for paper_data in papers_data["papers"]:
+                papers.append(ResearchPaper(**paper_data))
+        else:
+            # Use mock papers if MCP fails
+            papers = [ResearchPaper(**paper) for paper in MOCK_RESEARCH_PAPERS[:5]]
+        
+        return generate_comprehensive_summaries(topic, papers)
+    except Exception as e:
+        logger.error(f"Summaries generation error: {e}")
+        papers = [ResearchPaper(**paper) for paper in MOCK_RESEARCH_PAPERS[:5]]
+        return generate_comprehensive_summaries(topic, papers)
+
+
+@app.post("/api/research/citations", response_model=AutomatedCitations)
+async def generate_research_citations(request: dict, db: Session = Depends(get_db)):
+    """Generate automated IEEE citations and bibliography."""
+    topic = request.get("topic", "")
+    if not topic:
+        raise HTTPException(status_code=400, detail="Topic is required")
+    
+    try:
+        # Get papers for the topic
+        papers_data = await mcp_client.search_papers(topic, max_results=10)
+        papers = []
+        if "papers" in papers_data:
+            for paper_data in papers_data["papers"]:
+                papers.append(ResearchPaper(**paper_data))
+        else:
+            papers = [ResearchPaper(**paper) for paper in MOCK_RESEARCH_PAPERS]
+        
+        return generate_automated_citations(papers)
+    except Exception as e:
+        logger.error(f"Citations generation error: {e}")
+        papers = [ResearchPaper(**paper) for paper in MOCK_RESEARCH_PAPERS]
+        return generate_automated_citations(papers)
+
+
+@app.post("/api/research/sample-paper", response_model=SampleResearchPaper)
+async def generate_research_paper(request: dict, db: Session = Depends(get_db)):
+    """Generate a sample research paper based on the topic."""
+    topic = request.get("topic", "")
+    if not topic:
+        raise HTTPException(status_code=400, detail="Topic is required")
+    
+    try:
+        # Get papers for the topic
+        papers_data = await mcp_client.search_papers(topic, max_results=10)
+        papers = []
+        if "papers" in papers_data:
+            for paper_data in papers_data["papers"]:
+                papers.append(ResearchPaper(**paper_data))
+        else:
+            papers = [ResearchPaper(**paper) for paper in MOCK_RESEARCH_PAPERS]
+        
+        return generate_sample_research_paper(topic, papers)
+    except Exception as e:
+        logger.error(f"Sample paper generation error: {e}")
+        papers = [ResearchPaper(**paper) for paper in MOCK_RESEARCH_PAPERS]
+        return generate_sample_research_paper(topic, papers)
+
+
+@app.get("/api/research/papers/{paper_id}/summary")
+async def get_paper_summary(paper_id: int, db: Session = Depends(get_db)):
+    """Get detailed summary for a specific research paper."""
+    # Find paper in mock data (in real implementation, would query database)
+    paper_data = None
+    for paper in MOCK_RESEARCH_PAPERS:
+        if paper["id"] == paper_id:
+            paper_data = paper
+            break
+    
+    if not paper_data:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    
+    paper = ResearchPaper(**paper_data)
+    summary = DocumentSummary(
+        paper_id=paper.id,
+        title=paper.title,
+        summary=f"This comprehensive analysis of '{paper.title}' reveals significant contributions to the field. The research addresses key challenges and presents innovative solutions with practical applications.",
+        key_findings=[
+            f"Novel algorithm achieving {85 + paper_id}% improvement",
+            "Comprehensive experimental validation",
+            "Real-world application demonstration",
+            "Theoretical framework establishment"
+        ],
+        methodology="The research employs a systematic approach combining theoretical analysis with empirical validation through controlled experiments and real-world testing.",
+        limitations=[
+            "Limited dataset size for certain experiments",
+            "Computational complexity considerations",
+            "Scope limitations to specific domains",
+            "Need for longitudinal validation"
+        ],
+        significance="This work makes substantial contributions to the field by introducing novel methodologies and demonstrating their effectiveness across multiple application domains."
+    )
+    
+    return summary
